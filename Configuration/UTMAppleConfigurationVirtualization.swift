@@ -122,16 +122,20 @@ extension UTMAppleConfigurationVirtualization {
         if hasEntropy {
             vzconfig.entropyDevices = [VZVirtioEntropyDeviceConfiguration()]
         }
-        #if arch(arm64)
         if #available(macOS 12, *) {
             if hasAudio {
-                let audioConfiguration = VZVirtioSoundDeviceConfiguration()
-                let audioInput = VZVirtioSoundDeviceInputStreamConfiguration()
-                audioInput.source = VZHostAudioInputStreamSource()
-                let audioOutput = VZVirtioSoundDeviceOutputStreamConfiguration()
-                audioOutput.sink = VZHostAudioOutputStreamSink()
-                audioConfiguration.streams = [audioInput, audioOutput]
-                vzconfig.audioDevices = [audioConfiguration]
+                // Source https://developer.apple.com/documentation/virtualization/audio
+                let outputStream = VZVirtioSoundDeviceOutputStreamConfiguration()
+                outputStream.sink = VZHostAudioOutputStreamSink()
+                let outputSoundDevice = VZVirtioSoundDeviceConfiguration()
+                outputSoundDevice.streams = [outputStream]
+                
+                let inputStream = VZVirtioSoundDeviceInputStreamConfiguration()
+                inputStream.source = VZHostAudioInputStreamSource()
+                let inputSoundDevice = VZVirtioSoundDeviceConfiguration()
+                inputSoundDevice.streams = [inputStream]
+                
+                vzconfig.audioDevices = [outputSoundDevice, inputSoundDevice]
             }
             if hasKeyboard {
                 vzconfig.keyboards = [VZUSBKeyboardConfiguration()]
@@ -144,7 +148,6 @@ extension UTMAppleConfigurationVirtualization {
                 throw UTMAppleConfigurationError.featureNotSupported
             }
         }
-        #endif
         if #available(macOS 13, *) {
             #if arch(arm64)
             if hasRosetta == true {
